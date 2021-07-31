@@ -74,7 +74,7 @@ var job = gointerlock.GoInterval{
     Interval:      2 * time.Second,
     Arg:           myJob,
     RedisHost:     "localhost:6379",
-    RedisPassword: "myRedisPassword",
+    RedisPassword: "myRedisPassword", //if no pass leave it as ""
 }
 err := job.Run(context.Background())
 if err != nil {

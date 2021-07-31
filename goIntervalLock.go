@@ -11,7 +11,7 @@ type Locker struct {
 	redisConnector *redis.Client
 }
 
-func (s *Locker) Lock(ctx context.Context, key string) (success bool, err error) {
+func (s *Locker) Lock(ctx context.Context, key string, lockTtl time.Duration) (success bool, err error) {
 
 	if s.redisConnector != nil {
 
@@ -19,12 +19,13 @@ func (s *Locker) Lock(ctx context.Context, key string) (success bool, err error)
 			return false, errors.New("`Distributed Jobs should have a unique name!`")
 		}
 
-		res, err := s.redisConnector.SetNX(ctx, key, time.Now().String(), time.Second*15).Result()
+		res, err := s.redisConnector.SetNX(ctx, key, time.Now().String(), lockTtl).Result()
 		if err != nil {
 			return false, err
 		}
 		return res, nil
 	}
+	//true when lock is disabled
 	return true, nil
 }
 

@@ -75,7 +75,7 @@ func (t *GoInterval) Run(ctx context.Context) error {
 			<-t.timer.C
 
 			//lock
-			locked, errLock := locker.Lock(ctx, t.Name)
+			locked, errLock := locker.Lock(ctx, t.Name, t.Interval)
 
 			if errLock != nil {
 				return errLock
