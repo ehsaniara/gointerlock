@@ -1,5 +1,5 @@
 # goInterLock
-![Go Interval Lock](https://github.com/ehsaniara/gointerlock/blob/main/material/gointerlock.png)
+![Go Interval Lock](https://raw.githubusercontent.com/ehsaniara/gointerlock/main/material/gointerlock.png)
 
 ## **Go**lang **Interval** job timer, with distributed **Lock**
 
