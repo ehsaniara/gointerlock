@@ -1,7 +1,9 @@
-# gointerlock
-![](gointerlock.png)
+# goInterLock
+![Go Interval Lock](material/gointerlock.png)
 
-go interval job timer, with distributed lock
+## **Go**lang **Interval** job timer, with distributed **Lock**
+
+`goInterLock` is golang job/task scheduler with distributed locking mechanism. In distributed system locking is prevent task been executed in every instant that has the scheduler, For example, if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application and you ended up running that task multiple time every 10 minutes.
 
 Quick Start
 
@@ -9,7 +11,7 @@ Quick Start
 go get github.com/ehsaniara/gointerlock
 ```
 
-## Simple Local Scheduler (Single App)
+# Local Scheduler (Single App)
 
 (Interval every 2 seconds)
 
@@ -24,9 +26,9 @@ if err != nil {
 }
 ```
 
-## Simple Distributed Scheduler (Scaled)
+# Distributed Scheduler (Scaled Up)
 
-(Interval every 2 seconds)
+## Existing Redis Connection
 you should already configure your Redis connection and pass it into the `GoInterLock`. Also make sure you are giving the
 unique name per job
 
@@ -62,7 +64,7 @@ func myJob() {
 ```
 _Note: currently `GoInterLock` does not support any argument for the job function_
 
-### Built in Redis Config
+### Built in Redis Connector
 
 another way is to use an existing redis connection:
 
@@ -79,3 +81,5 @@ if err != nil {
     log.Fatalf("Error: %s", err)
 }
 ```
+
+#### GoInterLock is using [go-redis](https://github.com/go-redis/redis) for Redis Connection.

@@ -1,1 +1,1 @@
-package gointerlock
+package gointerlock_test
