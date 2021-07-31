@@ -17,7 +17,7 @@ var job = gointerlock.GoInterval{
     Interval: 2 * time.Second,
     Arg:      myJob,
 }
-err := jobTicker.Run(ctx)
+err := job.Run(ctx)
 if err != nil {
         log.Fatalf("Error: %s", err)
 }
