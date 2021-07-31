@@ -14,12 +14,12 @@ go get github.com/ehsaniara/gointerlock
 
 ```go
 var job = gointerlock.GoInterval{
-Interval: 2 * time.Second,
-Arg:      myJob,
+    Interval: 2 * time.Second,
+    Arg:      myJob,
 }
 err := jobTicker.Run(ctx)
 if err != nil {
-log.Fatalf("Error: %s", err)
+        log.Fatalf("Error: %s", err)
 }
 ```
 
@@ -31,13 +31,13 @@ unique name per job
 
 ```go
 var job = gointerlock.GoInterval{
-Interval: 2 * time.Second,
-Arg:      myJob,
-Name:     "MyTestJob",
-RedisConnector: pgeRedis.Rdb,
+    Interval: 2 * time.Second,
+    Arg:      myJob,
+    Name:     "MyTestJob",
+    RedisConnector: pgeRedis.Rdb,
 }
 err := jobTicker.Run(ctx)
 if err != nil {
-log.Fatalf("Error: %s", err)
+    log.Fatalf("Error: %s", err)
 }
 ```
