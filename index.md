@@ -1,37 +1,85 @@
-## Welcome to GitHub Pages
+# goInterLock
+![Go Interval Lock](https://github.com/ehsaniara/gointerlock/blob/main/gointerlock.png)
 
-You can use the [editor on GitHub](https://github.com/ehsaniara/gointerlock/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+## **Go**lang **Interval** job timer, with distributed **Lock**
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+`goInterLock` is golang job/task scheduler with distributed locking mechanism. In distributed system locking is prevent task been executed in every instant that has the scheduler, For example, if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application and you ended up running that task multiple time every 10 minutes.
 
-### Markdown
+Quick Start
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```shell
+go get github.com/ehsaniara/gointerlock
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+# Local Scheduler (Single App)
 
-### Jekyll Themes
+(Interval every 2 seconds)
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/ehsaniara/gointerlock/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+```go
+var job = gointerlock.GoInterval{
+    Interval: 2 * time.Second,
+    Arg:      myJob,
+}
+err := job.Run(ctx)
+if err != nil {
+        log.Fatalf("Error: %s", err)
+}
+```
 
-### Support or Contact
+# Distributed Scheduler (Scaled Up)
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+## Existing Redis Connection
+you should already configure your Redis connection and pass it into the `GoInterLock`. Also make sure you are giving the
+unique name per job
+
+Step 1: configure redis connection `redisConnection.Rdb` from the existing application and pass it into the Job. for example:
+```go
+var redisConnector = redis.NewClient(&redis.Options{
+    Addr:     "localhost:6379",
+    Password: "myRedisPassword", 
+    DB:       0,               
+})
+```
+Step 2: Pass the redis connection into the `GoInterval`
+
+```go
+var job = gointerlock.GoInterval{
+    Interval: 2 * time.Second,
+    Arg:      myJob,
+    Name:     "MyTestJob",
+    RedisConnector: redisConnector,
+}
+err := jobTicker.Run(ctx)
+if err != nil {
+    log.Fatalf("Error: %s", err)
+}
+```
+
+in both examples `myJob` is your function, for example:
+
+```go
+func myJob() {
+	fmt.Println(time.Now(), " - called")
+}
+```
+_Note: currently `GoInterLock` does not support any argument for the job function_
+
+### Built in Redis Connector
+
+another way is to use an existing redis connection:
+
+```go
+var job = gointerlock.GoInterval{
+    Name:          "MyTestJob",
+    Interval:      2 * time.Second,
+    Arg:           myJob,
+    RedisHost:     "localhost:6379",
+    RedisPassword: "myRedisPassword",
+}
+err := job.Run(context.Background())
+if err != nil {
+    log.Fatalf("Error: %s", err)
+}
+```
+
+#### GoInterLock is using [go-redis](https://github.com/go-redis/redis) for Redis Connection.
