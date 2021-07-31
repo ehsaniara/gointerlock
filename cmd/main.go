@@ -15,12 +15,12 @@ func myJob() {
 func main() {
 
 	//test cron
-	var jobTicker = gointerlock.GoInterval{
+	var job = gointerlock.GoInterval{
 		Name:     "MyTestJob",
 		Interval: 2 * time.Second,
 		Arg:      myJob,
 	}
-	err := jobTicker.Run(context.Background())
+	err := job.Run(context.Background())
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
