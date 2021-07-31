@@ -26,7 +26,7 @@ if err != nil {
 ## Simple Distributed Scheduler
 
 (Interval every 2 seconds)
-you should already configure your Redis connection and pass it into the `GoInterval`. Also make sure you are giving the
+you should already configure your Redis connection and pass it into the `GoInterLock`. Also make sure you are giving the
 unique name per job
 
 ```go
@@ -41,3 +41,12 @@ if err != nil {
     log.Fatalf("Error: %s", err)
 }
 ```
+
+in both examples `myJob` is your function, for example:
+
+```go
+func myJob() {
+	fmt.Println(time.Now(), " - called")
+}
+```
+_Note: currently `GoInterLock` does not support any argument for the job function_
