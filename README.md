@@ -82,4 +82,11 @@ if err != nil {
 }
 ```
 
-#### GoInterLock is using [go-redis](https://github.com/go-redis/redis) for Redis Connection.
+##### GoInterLock is using [go-redis](https://github.com/go-redis/redis) for Redis Connection.
+
+
+
+## Examples
+[**Basic Task:**](./example/basic) Simple Task Interval with Redis Lock. 
+
+[**Application Cache:**](./example/applicationCache) An example of periodically cached value update on http server.
