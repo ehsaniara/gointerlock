@@ -9,16 +9,34 @@ import (
 )
 
 type GoInterval struct {
-	Name           string
-	Arg            func()
-	Interval       time.Duration
-	timer          *time.Timer
+
+	//Name: is a unique job/task name, this is needed for distribution lock, this value enables the distribution mode
+	// for local uses you don't need to set this value
+	Name string
+
+	// Arg: the func that need to be call in every period
+	Arg func()
+
+	// Interval: Timer Interval
+	Interval time.Duration
+
+	// internal use, it should not get modified
+	timer *time.Timer
+
+	// RedisConnector : in case your app has redis connection configured already
 	RedisConnector *redis.Client
-	RedisHost      string // "localhost:6379"
-	RedisPassword  string // "password"
-	RedisDB        string // 0 , It's from 0 to 15
+
+	// RedisHost Redis Host the default value "localhost:6379"
+	RedisHost string
+
+	// RedisPassword: Redis Password (AUTH), It can be blank if Redis has no authentication req
+	RedisPassword string
+
+	// 0 , It's from 0 to 15
+	RedisDB string
 }
 
+// Run to start the interval timer
 func (t *GoInterval) Run(ctx context.Context) error {
 
 	if ctx == nil {
