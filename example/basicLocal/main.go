@@ -18,11 +18,8 @@ func main() {
 	//test cron
 	go func() {
 		var job = gointerlock.GoInterval{
-			Name:          "MyTestJob",
-			Interval:      2 * time.Second,
-			Arg:           myJob,
-			RedisHost:     "localhost:6379",
-			RedisPassword: "MyRedisPassword",
+			Interval: 2 * time.Second,
+			Arg:      myJob,
 		}
 		err := job.Run(cnx)
 		if err != nil {

@@ -1,11 +1,13 @@
-# goInterLock
+# goInterLock 
 ![Go Interval Lock](material/gointerlock.png)
+
+known as: (Cron / Job / Task / Scheduler)
 
 ## **Go**lang **Interval** job timer, with distributed **Lock**
 
 `goInterLock` is golang job/task scheduler with distributed locking mechanism. In distributed system locking is preventing task been executed in every instant that has the scheduler, 
 
-**For example:** if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application, and you ended up running that task multiple time every 10 minutes. (let say in kubernetes)
+**For example:** if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application, and you ended up running that task multiple time every 10 minutes. (let say in **kubernetes**)
 
 Quick Start
 
@@ -89,6 +91,8 @@ if err != nil {
 
 
 ## Examples
-[**Basic Task:**](./example/basic) Simple Task Interval with Redis Lock. 
+[**Basic Local Task:**](./example/basic/main.go) Simple Task Interval with Redis Lock.
 
-[**Application Cache:**](./example/applicationCache) An example of periodically cached value update on http server.
+[**Basic Distributed Task:**](./example/basic/main.go) Simple Task Interval with Redis Lock.
+
+[**Application Cache:**](./example/applicationCache/main.go) An example of periodically cached value update on http server.
