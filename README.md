@@ -91,7 +91,7 @@ if err != nil {
 
 
 ## Examples
-[**Basic Local Task:**](./example/basic/main.go) Simple Task Interval with Redis Lock.
+[**Basic Local Task:**](./example/basicLocal/main.go) Simple Task Interval (Single App).
 
 [**Basic Distributed Task:**](./example/basic/main.go) Simple Task Interval with Redis Lock.
 
