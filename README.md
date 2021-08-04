@@ -1,7 +1,7 @@
 # goInterLock 
 ![Go Interval Lock](material/gointerlock.png)
 
-known as: (Cron / Job / Task / Scheduler)
+_known as: ⏰ Interval (Cron / Job / Task / Scheduler) ⏱️_
 
 ## **Go**lang **Interval** job timer, with distributed **Lock**
 
