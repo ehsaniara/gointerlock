@@ -3,7 +3,9 @@
 
 ## **Go**lang **Interval** job timer, with distributed **Lock**
 
-`goInterLock` is golang job/task scheduler with distributed locking mechanism. In distributed system locking is prevent task been executed in every instant that has the scheduler, For example, if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application and you ended up running that task multiple time every 10 minutes.
+`goInterLock` is golang job/task scheduler with distributed locking mechanism. In distributed system locking is preventing task been executed in every instant that has the scheduler, 
+
+**For example:** if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application, and you ended up running that task multiple time every 10 minutes. (let say in kubernetes)
 
 Quick Start
 
