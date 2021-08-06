@@ -22,7 +22,7 @@ func main() {
 			Interval:      2 * time.Second,
 			Arg:           myJob,
 			RedisHost:     "localhost:6379",
-			RedisPassword: "secret",
+			RedisPassword: "MyRedisPassword",
 		}
 		err := job.Run(cnx)
 		if err != nil {
