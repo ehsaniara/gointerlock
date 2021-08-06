@@ -8,10 +8,19 @@ import (
 	"time"
 )
 
+var locker Locker
+
+type LockVendor int32
+
+const (
+	SingleApp       LockVendor = 0 // no distributed lock
+	RedisLock       LockVendor = 1
+	AwsDynamoDbLock LockVendor = 2
+)
+
 type GoInterval struct {
 
-	//Name: is a unique job/task name, this is needed for distribution lock, this value enables the distribution mode
-	// for local uses you don't need to set this value
+	//Name: is a unique job/task name, this is needed for distribution lock, this value enables the distribution mode. for local uses you don't need to set this value
 	Name string
 
 	// Arg: the func that need to be call in every period
@@ -20,8 +29,9 @@ type GoInterval struct {
 	// Interval: Timer Interval
 	Interval time.Duration
 
-	// internal use, it should not get modified
-	timer *time.Timer
+	LockVendor LockVendor
+
+	//redis connection---------
 
 	// RedisConnector : in case your app has redis connection configured already
 	RedisConnector *redis.Client
@@ -32,8 +42,13 @@ type GoInterval struct {
 	// RedisPassword: Redis Password (AUTH), It can be blank if Redis has no authentication req
 	RedisPassword string
 
-	// 0 , It's from 0 to 15
+	// 0 , It's from 0 to 15 (Not for redis cluster)
 	RedisDB string
+
+	// DynamoDb
+
+	// internal use, it should not get modified
+	timer *time.Timer
 }
 
 // Run to start the interval timer
@@ -51,38 +66,21 @@ func (t *GoInterval) Run(ctx context.Context) error {
 		return errors.New("`What this timer should to run?`")
 	}
 
-	var locker Locker
-
-	// distributed mod is enabled
-	if t.RedisConnector != nil {
-
-		//validate the connection
-		if t.RedisConnector.Conn(ctx) == nil {
-			return errors.New("`Invalid Redis Connection`")
+	//To check if it's a distributed system, support older version v1.0.3
+	if t.Name != "" {
+		if t.LockVendor == 0 {
+			//default one, to support pre. Versions
+			t.LockVendor = RedisLock
 		}
-		locker.redisConnector = t.RedisConnector
-		log.Printf("Job %s started in distributed mode by provided redis connection", t.Name)
-
 	}
 
-	// distributed mod is enabled when name is provided, By using GoInterLock's provided connector
-	if t.RedisConnector == nil && t.Name != "" {
-
-		log.Printf("Job %s started in distributed mode!", t.Name)
-
-		//if Redis host missed
-		if t.RedisHost == "" {
-			t.RedisHost = "localhost:6379"
-		}
-
-		locker.redisConnector = redis.NewClient(&redis.Options{
-			Addr:     t.RedisHost,
-			Password: t.RedisPassword, // no password set
-			DB:       0,               // use default DB
-		})
+	err := t.init(ctx)
+	if err != nil {
+		return err
 	}
 
 	t.updateTimer()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -93,25 +91,105 @@ func (t *GoInterval) Run(ctx context.Context) error {
 			<-t.timer.C
 
 			//lock
-			locked, errLock := locker.Lock(ctx, t.Name, t.Interval)
-
-			if errLock != nil {
-				return errLock
-			}
-
-			if locked {
+			lock, _ := t.isNotLockThenLock(ctx)
+			if lock {
 
 				// run the task
 				t.Arg()
 
-				//unlock
-				errUnlock := locker.Unlock(ctx, t.Name)
-				if errUnlock != nil {
-					return errUnlock
-				}
+				t.UnLock(ctx)
 			}
 			t.updateTimer()
 		}
+	}
+}
+
+func (t *GoInterval) init(ctx context.Context) error {
+	// distributed mod is enabled
+	switch t.LockVendor {
+	case RedisLock:
+
+		//if given connection is null the use the built-in one
+		if t.RedisConnector == nil {
+
+			log.Printf("Job %s started in distributed mode!", t.Name)
+
+			//if Redis host missed, use the default one
+			if t.RedisHost == "" {
+				t.RedisHost = "localhost:6379"
+			}
+
+			locker.redisConnector = redis.NewClient(&redis.Options{
+				Addr:     t.RedisHost,
+				Password: t.RedisPassword, // no password set
+				DB:       0,               // use default DB
+			})
+
+		} else {
+			// set the connection
+			locker.redisConnector = t.RedisConnector
+		}
+
+		//validate the connection
+		if locker.redisConnector.Conn(ctx) == nil {
+			return errors.New("`Redis Connection Failed!`")
+		}
+
+		log.Printf("Job %s started in distributed mode by provided redis connection", t.Name)
+
+	case AwsDynamoDbLock:
+
+	default:
+
+	}
+	return nil
+}
+
+func (t *GoInterval) isNotLockThenLock(ctx context.Context) (bool, error) {
+
+	// distributed mod is enabled
+	switch t.LockVendor {
+	case RedisLock:
+
+		locked, err := locker.RedisLock(ctx, t.Name, t.Interval)
+
+		if err != nil {
+			return false, err
+		}
+		return locked, nil
+
+	case AwsDynamoDbLock:
+
+		//TODO: Should be implemented
+		return true, nil
+
+	default:
+
+		// no distributed lock
+		return true, nil
+
+	}
+}
+
+func (t *GoInterval) UnLock(ctx context.Context) {
+	//unlock
+	switch t.LockVendor {
+	case RedisLock:
+
+		err := locker.RedisUnlock(ctx, t.Name)
+		if err != nil {
+			return
+		}
+
+	case AwsDynamoDbLock:
+
+		//TODO: Should be implemented
+		return
+
+	default:
+
+		// no distributed lock
+		return
 	}
 }
 
