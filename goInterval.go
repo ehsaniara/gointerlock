@@ -3,9 +3,15 @@ package gointerlock
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/go-redis/redis/v8"
 	"log"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
 var locker Locker
@@ -46,6 +52,21 @@ type GoInterval struct {
 	RedisDB string
 
 	// DynamoDb
+
+	//leave empty to get from ~/.aws/credentials, (if AwsDynamoDbEndpoint not provided)
+	AwsDynamoDbRegion string
+
+	//leave empty to get from ~/.aws/credentials
+	AwsDynamoDbEndpoint string
+
+	//leave empty to get from ~/.aws/credentials, StaticCredentials (if AwsDynamoDbEndpoint not provided)
+	AwsDynamoDbAccessKeyID string
+
+	//leave empty to get from ~/.aws/credentials, StaticCredentials (if AwsDynamoDbEndpoint not provided)
+	AwsDynamoDbSecretAccessKey string
+
+	//leave empty to get from ~/.aws/credentials, StaticCredentials (if AwsDynamoDbEndpoint not provided)
+	AwsDynamoDbSessionToken string
 
 	// internal use, it should not get modified
 	timer *time.Timer
@@ -91,9 +112,12 @@ func (t *GoInterval) Run(ctx context.Context) error {
 			<-t.timer.C
 
 			//lock
-			lock, _ := t.isNotLockThenLock(ctx)
+			lock, err := t.isNotLockThenLock(ctx)
+			if err != nil {
+				log.Fatalf("err: %v", err)
+				return nil
+			}
 			if lock {
-
 				// run the task
 				t.Arg()
 
@@ -139,6 +163,77 @@ func (t *GoInterval) init(ctx context.Context) error {
 
 	case AwsDynamoDbLock:
 
+		// override the AWS profile credentials
+		if aws.String(t.AwsDynamoDbEndpoint) == nil {
+			// Initialize a session that the SDK will use to load
+			// credentials from the shared credentials file ~/.aws/credentials
+			// and region from the shared configuration file ~/.aws/config.
+			sess := session.Must(session.NewSessionWithOptions(session.Options{
+				SharedConfigState: session.SharedConfigEnable,
+			}))
+			// Create DynamoDB client
+			locker.dynamoClient = dynamodb.New(sess)
+		} else {
+
+			if aws.String(t.AwsDynamoDbRegion) == nil {
+				return errors.New("`AwsDynamoDbRegion is missing (AWS Region)`")
+			}
+
+			//setting StaticCredentials
+			awsConfig := &aws.Config{
+				Credentials: credentials.NewStaticCredentials(t.AwsDynamoDbAccessKeyID, t.AwsDynamoDbSecretAccessKey, t.AwsDynamoDbSessionToken),
+				Region:      aws.String(t.AwsDynamoDbRegion),
+				Endpoint:    aws.String(t.AwsDynamoDbEndpoint),
+			}
+			sess, err := session.NewSession(awsConfig)
+			if err != nil {
+				return err
+			}
+			// Create DynamoDB client
+			locker.dynamoClient = dynamodb.New(sess)
+		}
+
+		//sess, err := session.NewSession(&aws.Config{
+		//	Region:      aws.String("us-west-2"),
+		//	Credentials: credentials.NewStaticCredentials(conf.AWS_ACCESS_KEY_ID, conf.AWS_SECRET_ACCESS_KEY, ""),
+		//})
+
+		if locker.dynamoClient == nil {
+			return errors.New("`DynamoDb Connection Failed!`")
+		}
+
+		//check if table exist, if not create one
+		tableInput := &dynamodb.CreateTableInput{
+			AttributeDefinitions: []*dynamodb.AttributeDefinition{
+				{
+					AttributeName: aws.String("id"),
+					AttributeType: aws.String("S"),
+				},
+			},
+			KeySchema: []*dynamodb.KeySchemaElement{
+				{
+					AttributeName: aws.String("id"),
+					KeyType:       aws.String("HASH"),
+				},
+			},
+			ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+				ReadCapacityUnits:  aws.Int64(10),
+				WriteCapacityUnits: aws.Int64(10),
+			},
+			//TimeToLiveDescription: &dynamodb.TimeToLiveDescription{
+			//	AttributeName:    aws.String("ttl"),
+			//	TimeToLiveStatus: aws.String("enable"),
+			//},
+			TableName: aws.String(Prefix),
+		}
+
+		_, err := locker.dynamoClient.CreateTable(tableInput)
+		if err != nil {
+			log.Printf("Got error calling CreateTable: %s", err)
+		} else {
+			fmt.Println("Created the table", Prefix)
+		}
+
 	default:
 
 	}
@@ -160,8 +255,12 @@ func (t *GoInterval) isNotLockThenLock(ctx context.Context) (bool, error) {
 
 	case AwsDynamoDbLock:
 
-		//TODO: Should be implemented
-		return true, nil
+		locked, err := locker.DynamoDbLock(ctx, t.Name, t.Interval)
+
+		if err != nil {
+			return false, err
+		}
+		return locked, nil
 
 	default:
 
@@ -183,8 +282,10 @@ func (t *GoInterval) UnLock(ctx context.Context) {
 
 	case AwsDynamoDbLock:
 
-		//TODO: Should be implemented
-		return
+		err := locker.DynamoDbUnlock(ctx, t.Name)
+		if err != nil {
+			return
+		}
 
 	default:
 

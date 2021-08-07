@@ -18,7 +18,8 @@ func main() {
 	go func() {
 		//setting up the scheduler parameter
 		var job = gointerlock.GoInterval{
-			Interval: 5 * time.Second,
+			LockVendor: gointerlock.SingleApp, //optional
+			Interval:   5 * time.Second,
 			Arg: func() {
 				expensiveQueryResult = fmt.Sprintf("Last result at: %v", time.Now())
 			},

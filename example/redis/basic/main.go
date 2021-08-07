@@ -15,14 +15,16 @@ func myJob() {
 func main() {
 	cnx := context.Background()
 
-	var job = gointerlock.GoInterval{
-		LockVendor: gointerlock.SingleApp, //optional
-		Interval:   2 * time.Second,
-		Arg:        myJob,
-	}
-
 	//test cron
 	go func() {
+		var job = gointerlock.GoInterval{
+			LockVendor:    gointerlock.RedisLock,
+			Name:          "MyTestJob",
+			Interval:      2 * time.Second,
+			Arg:           myJob,
+			RedisHost:     "localhost:6379",
+			RedisPassword: "MyRedisPassword",
+		}
 		err := job.Run(cnx)
 		if err != nil {
 			log.Fatalf("Error: %s", err)

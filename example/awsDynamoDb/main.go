@@ -17,12 +17,16 @@ func main() {
 
 	//test cron
 	go func() {
+
 		var job = gointerlock.GoInterval{
-			Name:          "MyTestJob",
-			Interval:      2 * time.Second,
-			Arg:           myJob,
-			RedisHost:     "localhost:6379",
-			RedisPassword: "MyRedisPassword",
+			Name:                       "MyTestJob",
+			Interval:                   2 * time.Second,
+			Arg:                        myJob,
+			LockVendor:                 gointerlock.AwsDynamoDbLock,
+			AwsDynamoDbRegion:          "us-east-1",
+			AwsDynamoDbEndpoint:        "http://127.0.0.1:8000",
+			AwsDynamoDbSecretAccessKey: "dummy",
+			AwsDynamoDbAccessKeyID:     "dummy",
 		}
 		err := job.Run(cnx)
 		if err != nil {
