@@ -91,8 +91,11 @@ if err != nil {
 
 
 ## Examples
-[**Basic Local Task:**](./example/basicLocal/main.go) Simple Task Interval (Single App).
+[**Basic Local Task:**](example/basicLocal/main.go) Simple Task Interval (Single App).
 
-[**Basic Distributed Task:**](./example/basic/main.go) Simple Task Interval with Redis Lock.
+
+### Redis
+
+[**Basic Distributed Task:**](example/redis/basic/main.go) Simple Task Interval with Redis Lock.
 
 [**Application Cache:**](./example/applicationCache/main.go) An example of periodically cached value update on http server.
