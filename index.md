@@ -1,5 +1,5 @@
 # goInterLock 
-![Go Interval Lock](material/gointerlock_bg.png)
+![Go Interval Lock](https://raw.githubusercontent.com/ehsaniara/gointerlock/main/material/gointerlock_bg.png)
 
 _known as: ⏰ Interval (Cron / Job / Task / Scheduler) ⏱️_
 
