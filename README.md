@@ -1,5 +1,5 @@
 # goInterLock 
-![Go Interval Lock](material/gointerlock.png)
+![Go Interval Lock](material/gointerlock_bg.png)
 
 _known as: ⏰ Interval (Cron / Job / Task / Scheduler) ⏱️_
 
@@ -14,6 +14,11 @@ Quick Start
 ```shell
 go get github.com/ehsaniara/gointerlock
 ```
+
+Supported Lock
+- [Redis](#redis)
+- [AWS DynamoDB](#aws-dynamodb)
+- Postgres DB (coming soon)
 
 # Local Scheduler (Single App)
 
@@ -30,9 +35,17 @@ if err != nil {
 }
 ```
 
-# Distributed Scheduler (Scaled Up)
+### Examples
+[**Basic Local Task:**](example/basicLocal/main.go) Simple Task Interval (Single App).
 
-## Existing Redis Connection
+[**Application Cache:**](./example/applicationCache/main.go) An example of periodically cached value update on http server.
+
+------
+# Distributed Mode (Scaled Up)
+
+## Redis
+
+### Existing Redis Connection
 you should already configure your Redis connection and pass it into the `GoInterLock`. Also make sure you are giving the
 unique name per job
 
@@ -90,12 +103,56 @@ if err != nil {
 
 
 
-## Examples
-[**Basic Local Task:**](example/basicLocal/main.go) Simple Task Interval (Single App).
-
-
-### Redis
+### Examples
 
 [**Basic Distributed Task:**](example/redis/basic/main.go) Simple Task Interval with Redis Lock.
 
-[**Application Cache:**](./example/applicationCache/main.go) An example of periodically cached value update on http server.
+-----
+
+## AWS DynamoDb
+
+### Basic Config (Local Environment)
+This ia sample of local DynamoDb (Docker) for your local test. 
+```go
+var job = gointerlock.GoInterval{
+    Name:                       "MyTestJob",
+    Interval:                   2 * time.Second,
+    Arg:                        myJob,
+    LockVendor:                 gointerlock.AwsDynamoDbLock,
+    AwsDynamoDbRegion:          "us-east-1",
+    AwsDynamoDbEndpoint:        "http://127.0.0.1:8000",
+    AwsDynamoDbSecretAccessKey: "dummy",
+    AwsDynamoDbAccessKeyID:     "dummy",
+}
+err := job.Run(cnx)
+if err != nil {
+    log.Fatalf("Error: %s", err)
+}
+```
+task:
+```go
+func myJob() {
+	fmt.Println(time.Now(), " - called")
+}
+```
+Note: you can get the docker-compose file from [AWS DynamoDB Docker compose](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html) or you can get it from: [docker-compose.yml](./example/awsDynamoDb/docker-compose.yml).
+
+### Using AWS Profile
+
+`goInterLock` will get credentials from the AWS profile
+
+```go
+var job = gointerlock.GoInterval{
+    Name:                       "MyTestJob",
+    Interval:                   2 * time.Second,
+    Arg:                        myJob,
+    LockVendor:                 gointerlock.AwsDynamoDbLock,
+}
+err := job.Run(cnx)
+if err != nil {
+    log.Fatalf("Error: %s", err)
+}
+```
+### Examples
+
+[**Basic Distributed Task:**](example/awsDynamoDb/main.go) Simple Task Interval with DynamoDb Lock.
