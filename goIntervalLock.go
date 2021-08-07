@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/go-redis/redis/v8"
-	"log"
 	"time"
 )
 
@@ -68,12 +67,11 @@ func (s *Locker) DynamoDbLock(ctx context.Context, key string, lockTtl time.Dura
 	// Make the DynamoDB Query API call
 	result, _ := s.dynamoClient.ScanWithContext(ctx, params)
 
-	log.Printf("--------------result.Items: %s", result.Items)
 	if len(result.Items) > 0 {
 		return false, nil
 	}
 
-	insert, errPut := s.dynamoClient.PutItemWithContext(ctx, &dynamodb.PutItemInput{
+	_, errPut := s.dynamoClient.PutItemWithContext(ctx, &dynamodb.PutItemInput{
 		Item:      DynamoDbUnlockMarshal(key),
 		TableName: aws.String(Prefix),
 	})
@@ -82,19 +80,16 @@ func (s *Locker) DynamoDbLock(ctx context.Context, key string, lockTtl time.Dura
 		return false, errPut
 	}
 
-	log.Printf("--------------insert: %s", insert)
-
 	return true, nil
 
 }
 
 func (s *Locker) DynamoDbUnlock(ctx context.Context, key string) error {
 	if s.dynamoClient != nil {
-		item, _ := s.dynamoClient.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
+		_, _ = s.dynamoClient.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 			Key:       DynamoDbUnlockMarshal(key),
 			TableName: aws.String(Prefix),
 		})
-		log.Printf("DynamoDbUnlock:%s\n", item)
 	}
 	return nil
 }
