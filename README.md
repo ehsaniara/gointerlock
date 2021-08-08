@@ -1,7 +1,7 @@
 # goInterLock 
 ![Go Interval Lock](material/gointerlock_bg.png)
 
-_known as: ⏰ Interval (Cron / Job / Task / Scheduler) ⏱️_
+_known as: ⏰ Interval (Cron / Job / Task / Scheduler) Golang Distributed Lock ⏱️_
 
 ## **Go**lang **Interval** job timer, with distributed **Lock**
 
@@ -43,7 +43,7 @@ if err != nil {
 ------
 # Distributed Mode (Scaled Up)
 
-## Redis
+## Redis (Recommended)
 
 ### Existing Redis Connection
 you should already configure your Redis connection and pass it into the `GoInterLock`. Also make sure you are giving the
