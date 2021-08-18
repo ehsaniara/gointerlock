@@ -1,11 +1,11 @@
 # goInterLock 
 ![Go Interval Lock](material/gointerlock_bg.png)
 
-_known as: ⏰ Interval (Cron / Job / Task / Scheduler) Go Distributed Lock ⏱️_
+_known as: ⏰ Interval (Cron / Job / Task / Scheduler) Go Centralized Lock ⏱️_
 
-## **Go** **Interval** job timer, with distributed **Lock**
+## Go Interval job timer, with centralized Lock for Distributed Systems
 
-`goInterLock` is go job/task scheduler with distributed locking mechanism. In distributed system locking is preventing task been executed in every instant that has the scheduler, 
+`goInterLock` is go job/task scheduler with centralized locking mechanism. In distributed system locking is preventing task been executed in every instant that has the scheduler, 
 
 **For example:** if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application, and you ended up running that task multiple time every 10 minutes. (let say in **kubernetes**)
 

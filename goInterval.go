@@ -3,18 +3,13 @@ package gointerlock
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/go-redis/redis/v8"
 	"log"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/go-redis/redis/v8"
 )
 
-var locker Locker
+var locker Lock
 
 type LockVendor int32
 
@@ -95,9 +90,35 @@ func (t *GoInterval) Run(ctx context.Context) error {
 		}
 	}
 
-	err := t.init(ctx)
-	if err != nil {
-		return err
+	switch t.LockVendor {
+	case RedisLock:
+		r := &RedisLocker{
+			redisConnector: t.RedisConnector,
+			Name:           t.Name,
+			RedisHost:      t.RedisHost,
+			RedisPassword:  t.RedisPassword,
+			RedisDB:        t.RedisDB,
+		}
+		err := r.SetClient()
+		if err != nil {
+			return err
+		}
+
+		locker = r
+	case AwsDynamoDbLock:
+		d := &DynamoDbLocker{
+			AwsDynamoDbRegion:          t.AwsDynamoDbRegion,
+			AwsDynamoDbEndpoint:        t.AwsDynamoDbEndpoint,
+			AwsDynamoDbAccessKeyID:     t.AwsDynamoDbAccessKeyID,
+			AwsDynamoDbSecretAccessKey: t.AwsDynamoDbSecretAccessKey,
+			AwsDynamoDbSessionToken:    t.AwsDynamoDbSessionToken,
+		}
+		err := d.SetClient()
+		if err != nil {
+			return err
+		}
+
+		locker = d
 	}
 
 	t.updateTimer()
@@ -128,168 +149,29 @@ func (t *GoInterval) Run(ctx context.Context) error {
 	}
 }
 
-func (t *GoInterval) init(ctx context.Context) error {
-	// distributed mod is enabled
-	switch t.LockVendor {
-	case RedisLock:
-
-		//if given connection is null the use the built-in one
-		if t.RedisConnector == nil {
-
-			log.Printf("Job %s started in distributed mode!", t.Name)
-
-			//if Redis host missed, use the default one
-			if t.RedisHost == "" {
-				t.RedisHost = "localhost:6379"
-			}
-
-			locker.redisConnector = redis.NewClient(&redis.Options{
-				Addr:     t.RedisHost,
-				Password: t.RedisPassword, // no password set
-				DB:       0,               // use default DB
-			})
-
-		} else {
-			// set the connection
-			locker.redisConnector = t.RedisConnector
-		}
-
-		//validate the connection
-		if locker.redisConnector.Conn(ctx) == nil {
-			return errors.New("`Redis Connection Failed!`")
-		}
-
-		log.Printf("Job %s started in distributed mode by provided redis connection", t.Name)
-
-	case AwsDynamoDbLock:
-
-		// override the AWS profile credentials
-		if aws.String(t.AwsDynamoDbEndpoint) == nil {
-			// Initialize a session that the SDK will use to load
-			// credentials from the shared credentials file ~/.aws/credentials
-			// and region from the shared configuration file ~/.aws/config.
-			sess := session.Must(session.NewSessionWithOptions(session.Options{
-				SharedConfigState: session.SharedConfigEnable,
-			}))
-			// Create DynamoDB client
-			locker.dynamoClient = dynamodb.New(sess)
-		} else {
-
-			if aws.String(t.AwsDynamoDbRegion) == nil {
-				return errors.New("`AwsDynamoDbRegion is missing (AWS Region)`")
-			}
-
-			//setting StaticCredentials
-			awsConfig := &aws.Config{
-				Credentials: credentials.NewStaticCredentials(t.AwsDynamoDbAccessKeyID, t.AwsDynamoDbSecretAccessKey, t.AwsDynamoDbSessionToken),
-				Region:      aws.String(t.AwsDynamoDbRegion),
-				Endpoint:    aws.String(t.AwsDynamoDbEndpoint),
-			}
-			sess, err := session.NewSession(awsConfig)
-			if err != nil {
-				return err
-			}
-			// Create DynamoDB client
-			locker.dynamoClient = dynamodb.New(sess)
-		}
-
-		//sess, err := session.NewSession(&aws.Config{
-		//	Region:      aws.String("us-west-2"),
-		//	Credentials: credentials.NewStaticCredentials(conf.AWS_ACCESS_KEY_ID, conf.AWS_SECRET_ACCESS_KEY, ""),
-		//})
-
-		if locker.dynamoClient == nil {
-			return errors.New("`DynamoDb Connection Failed!`")
-		}
-
-		//check if table exist, if not create one
-		tableInput := &dynamodb.CreateTableInput{
-			AttributeDefinitions: []*dynamodb.AttributeDefinition{
-				{
-					AttributeName: aws.String("id"),
-					AttributeType: aws.String("S"),
-				},
-			},
-			KeySchema: []*dynamodb.KeySchemaElement{
-				{
-					AttributeName: aws.String("id"),
-					KeyType:       aws.String("HASH"),
-				},
-			},
-			ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-				ReadCapacityUnits:  aws.Int64(10),
-				WriteCapacityUnits: aws.Int64(10),
-			},
-			//TimeToLiveDescription: &dynamodb.TimeToLiveDescription{
-			//	AttributeName:    aws.String("ttl"),
-			//	TimeToLiveStatus: aws.String("enable"),
-			//},
-			TableName: aws.String(Prefix),
-		}
-
-		_, err := locker.dynamoClient.CreateTable(tableInput)
-		if err != nil {
-			log.Printf("Got error calling CreateTable: %s", err)
-		} else {
-			fmt.Println("Created the table", Prefix)
-		}
-
-	default:
-
-	}
-	return nil
-}
-
 func (t *GoInterval) isNotLockThenLock(ctx context.Context) (bool, error) {
-
-	// distributed mod is enabled
-	switch t.LockVendor {
-	case RedisLock:
-
-		locked, err := locker.RedisLock(ctx, t.Name, t.Interval)
-
-		if err != nil {
-			return false, err
-		}
-		return locked, nil
-
-	case AwsDynamoDbLock:
-
-		locked, err := locker.DynamoDbLock(ctx, t.Name, t.Interval)
-
-		if err != nil {
-			return false, err
-		}
-		return locked, nil
-
-	default:
-
-		// no distributed lock
+	//lock
+	if t.LockVendor == SingleApp {
 		return true, nil
-
 	}
+	locked, err := locker.Lock(ctx, t.Name, t.Interval)
+
+	if err != nil {
+		log.Fatalf("err:%v", err)
+		return false, err
+	}
+	return locked, nil
 }
 
 func (t *GoInterval) UnLock(ctx context.Context) {
 	//unlock
-	switch t.LockVendor {
-	case RedisLock:
 
-		err := locker.RedisUnlock(ctx, t.Name)
-		if err != nil {
-			return
-		}
+	if t.LockVendor == SingleApp {
+		return
+	}
 
-	case AwsDynamoDbLock:
-
-		err := locker.DynamoDbUnlock(ctx, t.Name)
-		if err != nil {
-			return
-		}
-
-	default:
-
-		// no distributed lock
+	err := locker.UnLock(ctx, t.Name)
+	if err != nil {
 		return
 	}
 }

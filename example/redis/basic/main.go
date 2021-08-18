@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/ehsaniara/gointerlock"
 	"log"
 	"time"
+
+	"github.com/ehsaniara/gointerlock"
 )
 
 func myJob() {
@@ -21,7 +22,7 @@ func main() {
 		Interval:      2 * time.Second,
 		Arg:           myJob,
 		RedisHost:     "localhost:6379",
-		RedisPassword: "MyRedisPassword",
+		RedisPassword: "secret",
 	}
 
 	//test cron
