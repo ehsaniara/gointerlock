@@ -3,7 +3,7 @@
 
 _known as: ⏰ Interval (Cron / Job / Task / Scheduler) Go Centralized Lock ⏱️_
 
-## Go Interval job timer, with centralized Lock for Distributed Systems
+## Go Interval job/task , with centralized Lock for Distributed Systems
 
 `goInterLock` is go job/task scheduler with centralized locking mechanism. In distributed system locking is preventing task been executed in every instant that has the scheduler, 
 
