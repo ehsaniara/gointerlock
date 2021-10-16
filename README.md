@@ -185,7 +185,7 @@ type distributedLock struct {
 	rdb *redis.Client
 }
 
-// Lock return TRUE when locked, return FALSE if it's already been locked by others
+// Lock return TRUE when successfully locked, return FALSE if it's already been locked by others
 func (d distributedLock) Lock(ctx context.Context, lockName string, maxLockingDuration time.Duration) bool {
 	key := fmt.Sprintf("lock_%s", lockName)
 	//check if it's already locked
