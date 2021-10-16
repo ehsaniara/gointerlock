@@ -158,7 +158,8 @@ if err != nil {
 [**Basic Distributed Task:**](example/awsDynamoDb/main.go) Simple Task Interval with DynamoDb Lock.
 
 
-# Just centralized lock for the Distributed Systems (No Timer/Scheduler)
+
+# :four_leaf_clover: Only The centralized lock for the Distributed Systems (No Timer/Scheduler)
 
 ```go
 
