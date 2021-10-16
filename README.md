@@ -159,7 +159,7 @@ if err != nil {
 
 
 
-# :four_leaf_clover: Only The centralized lock for the Distributed Systems (No Timer/Scheduler)
+# :four_leaf_clover: Centralized lock for the Distributed Systems (No Timer/Scheduler)
 
 ```go
 
