@@ -79,7 +79,7 @@ func myJob() {
 	fmt.Println(time.Now(), " - called")
 }
 ```
-_Note: currently `GoInterLock` does not support any argument for the job function_
+> Currently `GoInterLock` does not support any argument for the job function_
 
 ### Built in Redis Connector
 
@@ -135,7 +135,7 @@ func myJob() {
 	fmt.Println(time.Now(), " - called")
 }
 ```
-Note: you can get the docker-compose file from [AWS DynamoDB Docker compose](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html) or you can get it from: [docker-compose.yml](./example/awsDynamoDb/docker-compose.yml).
+> You can get the docker-compose file from [AWS DynamoDB Docker compose](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html) , also avalble from: [docker-compose.yml](./example/awsDynamoDb/docker-compose.yml).
 
 ### Using AWS Profile
 
@@ -146,7 +146,6 @@ var job = gointerlock.GoInterval{
     Name:                       "MyTestJob",
     Interval:                   2 * time.Second,
     Arg:                        myJob,
-    LockVendor:                 gointerlock.AwsDynamoDbLock,
 }
 err := job.Run(cnx)
 if err != nil {
@@ -205,6 +204,5 @@ func (d distributedLock) UnLock(ctx context.Context, lockName string) {
 	//remove the lock
 	d.rdb.Del(ctx, key)
 }
-
 
 ```
