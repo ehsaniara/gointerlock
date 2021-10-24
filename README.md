@@ -79,7 +79,7 @@ func myJob() {
 	fmt.Println(time.Now(), " - called")
 }
 ```
-> Currently `GoInterLock` does not support any argument for the job function_
+> Currently `GoInterLock` does not support any argument for the job function
 
 ### Built in Redis Connector
 
