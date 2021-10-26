@@ -18,7 +18,7 @@ go get github.com/ehsaniara/gointerlock
 Supported Lock
 - [Redis](#redis)
 - [AWS DynamoDB](#aws-dynamodb)
-- Postgres DB (coming soon)
+- Postgres DB
 
 # Local Scheduler (Single App)
 
