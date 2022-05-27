@@ -2,6 +2,7 @@ package gointerlock
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -14,9 +15,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/go-redis/redis/v8"
+	"github.com/lib/pq"
 )
 
 const Prefix = "GoInterLock"
+
+const (
+	UniqueViolationErr = pq.ErrorCode("23505")
+)
 
 type Lock interface {
 	Lock(ctx context.Context, key string, interval time.Duration) (success bool, err error)
@@ -241,4 +247,116 @@ func DynamoDbUnlockMarshal(key string) map[string]*dynamodb.AttributeValue {
 		Id: key,
 	})
 	return lockObj
+}
+
+type PostgresLocker struct {
+	postgresConnector *sql.DB
+
+	// Name: is a unique job/task name, this is needed for distribution lock, this value enables the distribution mode. for local uses you don't need to set this value
+	Name string
+
+	// PostgresHost - Postgres Host the default value "localhost:5672"
+	PostgresHost string
+
+	// PostgresPassword: Redis Password (AUTH), It can be blank if Redis has no authentication req
+	PostgresPassword string
+
+	// 0 , It's from 0 to 15 (Not for redis cluster)
+	PostgresDB string
+
+	PostgresConnStr string
+}
+
+func (r *PostgresLocker) SetClient() error {
+
+	//already has connection
+	if r.postgresConnector != nil {
+		return nil
+	}
+
+	log.Printf("Job %s started in distributed mode!", r.Name)
+
+	//if Postgres host missed, use the default one
+	if r.PostgresHost == "" {
+		r.PostgresHost = "localhost:5432"
+	}
+
+	db, err := sql.Open("postgres", r.PostgresConnStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r.postgresConnector = db
+
+	err = r.setupTable(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Job %s started in distributed mode by provided postgres connection", r.Name)
+	return nil
+}
+
+func (r *PostgresLocker) setupTable(db *sql.DB) error {
+	query := `CREATE TABLE IF NOT EXISTS locks (
+		id text NOT NULL,
+		created_at timestamp NOT NULL,
+		ttl integer,
+		PRIMARY KEY (id)
+	  )`
+	res, err := r.postgresConnector.ExecContext(context.Background(), query)
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(res)
+	return nil
+}
+
+func (r *PostgresLocker) Lock(ctx context.Context, key string, lockTtl time.Duration) (success bool, err error) {
+
+	if r.postgresConnector != nil {
+
+		if key == "" {
+			return false, errors.New("`Distributed Jobs should have a unique name!`")
+		}
+
+		res, err := r.postgresConnector.ExecContext(ctx, "INSERT into locks values ($1,$2,$3)", fmt.Sprintf("%s_%s", Prefix, key), time.Now(), lockTtl.Seconds())
+		if err != nil {
+			if IsErrorCode(err, UniqueViolationErr) {
+				return false, nil
+			}
+			return false, err
+		}
+		affected, err := res.RowsAffected()
+		if err != nil {
+			return false, errors.New("`Couldn't Acquire Lock`")
+		}
+		return affected >= 1, nil
+	}
+
+	return false, errors.New("`No Postgres Connection found`")
+}
+
+func (r *PostgresLocker) UnLock(ctx context.Context, key string) error {
+	if r.postgresConnector != nil {
+		res, err := r.postgresConnector.ExecContext(ctx, "DELETE FROM locks WHERE id = $1", fmt.Sprintf("%s_%s", Prefix, key))
+		if err != nil {
+			return err
+		}
+		_, err = res.RowsAffected()
+		if err != nil {
+			return errors.New("`Couldn't Remove Lock`")
+		}
+		return nil
+	} else {
+		return nil
+	}
+}
+
+func IsErrorCode(err error, errcode pq.ErrorCode) bool {
+	if pgerr, ok := err.(*pq.Error); ok {
+		return pgerr.Code == errcode
+	}
+	return false
 }
