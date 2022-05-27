@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+   postgres:
+    image: "postgres:10.20-alpine"
+    environment:
+      POSTGRES_USER: guest
+      POSTGRES_PASSWORD: guest
+      POSTGRES_DB: locks
+    ports:
+      - "5432:5432"

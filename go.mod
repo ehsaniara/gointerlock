@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.44.22
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/lib/pq v1.10.6
 )
 
 require (

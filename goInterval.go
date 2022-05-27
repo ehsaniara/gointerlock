@@ -17,6 +17,7 @@ const (
 	SingleApp       LockVendor = 0 // no distributed lock
 	RedisLock       LockVendor = 1
 	AwsDynamoDbLock LockVendor = 2
+	PostgresLock    LockVendor = 3
 )
 
 type GoInterval struct {
@@ -62,6 +63,10 @@ type GoInterval struct {
 
 	//leave empty to get from ~/.aws/credentials, StaticCredentials (if AwsDynamoDbEndpoint not provided)
 	AwsDynamoDbSessionToken string
+
+	// Postgres
+
+	PostgresConnStr string
 
 	// internal use, it should not get modified
 	timer *time.Timer
@@ -119,6 +124,17 @@ func (t *GoInterval) Run(ctx context.Context) error {
 		}
 
 		locker = d
+	case PostgresLock:
+		p := &PostgresLocker{
+			Name:            t.Name,
+			PostgresConnStr: t.PostgresConnStr,
+		}
+		err := p.SetClient()
+		if err != nil {
+			return err
+		}
+
+		locker = p
 	}
 
 	t.updateTimer()
