@@ -7,7 +7,7 @@ _known as: ⏰ Interval (Cron / Job / Task / Scheduler) Go Centralized Lock ⏱�
 
 `goInterLock` is go job/task scheduler with centralized locking mechanism. In distributed system locking is preventing task been executed in every instant that has the scheduler, 
 
->  **_Note:_** Kubernetes' has Lease object, which you can implement leader election, [Here is a working example of using kubernetes Lease Api](K8sLease.md)  
+>  **_Note:_** Kubernetes has the Lease object, which you can use to implement the `Leader election`. [Here is a working example of using kubernetes Lease API](K8sLease.md)  
 
 **For example:** if your application has a task of calling some external APIs or doing some DB querying every 10 minutes, the lock prevents the process been run in every instance of that application, and you ended up running that task multiple time every 10 minutes.
 
